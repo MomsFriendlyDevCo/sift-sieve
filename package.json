@@ -1,6 +1,6 @@
 {
   "name": "sift-sieve",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Wrapper around Sift which provides other ReST functionality",
   "main": "index.js",
   "scripts": {
@@ -19,5 +19,13 @@
   "bugs": {
     "url": "https://github.com/MomsFriendlyDevCo/sift-sieve/issues"
   },
-  "homepage": "https://github.com/MomsFriendlyDevCo/sift-sieve#readme"
+  "homepage": "https://github.com/MomsFriendlyDevCo/sift-sieve#readme",
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "mocha": "^6.1.4"
+  },
+  "dependencies": {
+    "lodash": "^4.17.11",
+    "sift": "^8.3.3"
+  }
 }
