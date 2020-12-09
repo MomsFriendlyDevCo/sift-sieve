@@ -1,5 +1,5 @@
 var _ = require('lodash');
-var sift = require('sift').default;
+var sift = require('sift');
 
 module.exports = (data, query, options) => {
 	var settings = {
