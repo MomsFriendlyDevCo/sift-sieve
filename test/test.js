@@ -59,4 +59,14 @@ describe('sift-sieve', ()=> {
 		expect(()=> sieve(data, {select: ['!name', 'age']})).to.throw;
 	});
 
+	it('should reject "$where" unless applyWhere is enabled', ()=> {
+		expect(()=> sieve(data, {$where: 'this.age > 25'})).to.throw(/\$where/);
+		expect(()=> sieve(data, {$where: 'this.age > 25'}, {applyWhere: false})).to.throw(/\$where/);
+		expect(()=> sieve(data, {$where: 'this.age > 25'}, {applyWhere: 'true'})).to.throw(/\$where/);
+		expect(()=> sieve(data, {$or: [{name: 'Joe Random'}, {$where: 'this.age > 25'}]})).to.throw(/\$where/);
+		expect(()=> sieve(data, {$and: [{$or: [{$where: 'this.age > 25'}]}]})).to.throw(/\$where/);
+		expect(sieve(data, {$where: 'this.age > 25'}, {applyWhere: true})).to.deep.equal(data.filter(d => d.age > 25));
+		expect(sieve(data, {$where: function() { return this.age > 25 }}, {applyWhere: true})).to.deep.equal(data.filter(d => d.age > 25));
+	});
+
 });

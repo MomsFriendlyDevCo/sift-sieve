@@ -1,10 +1,21 @@
 var _ = require('lodash');
 var sift = require('sift');
 
+/**
+* Recursively determine if a query contains a `$where` operator at any depth
+* @param {*} query The query (or sub-query) to examine
+* @returns {boolean} True if a `$where` key was found anywhere within the query
+*/
+var hasWhere = query =>
+	Array.isArray(query) ? query.some(hasWhere)
+	: _.isPlainObject(query) ? Object.keys(query).some(k => k == '$where' || hasWhere(query[k]))
+	: false;
+
 module.exports = (data, query, options) => {
 	var settings = {
 		remapArray: true,
 		count: false,
+		applyWhere: false,
 		...options,
 	};
 
@@ -30,7 +41,9 @@ module.exports = (data, query, options) => {
 		});
 	// }}}
 
-	var siftQuery = sift(siftFilter, options);
+	if (settings.applyWhere !== true && hasWhere(siftFilter)) throw new Error('$where conditions are not permitted unless the `applyWhere` option is enabled');
+
+	var siftQuery = sift(siftFilter, _.omit(options, ['remapArray', 'count', 'applyWhere']));
 
 	var count = 0; // Number of items that test positive in the output so far
 	var skipped = 0;

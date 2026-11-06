@@ -41,3 +41,4 @@ Options are passed directly to Sift with the following exceptions:
 |--------------|-----------|---------|----------------------------------------------------------------------------------------|
 | `remapArray` | `boolean` | `true`  | Whether to transform simple `{key: Array}` keys into `{key: {$in: Array}}`             |
 | `count`      | `boolean` | `false` | Whether to return a single Number of the matching elements rather than the found items |
+| `applyWhere` | `boolean` | `false` | Whether to allow `$where` conditions (at any depth) - if falsy any query containing `$where` throws an error |
