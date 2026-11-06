@@ -1,6 +1,6 @@
 {
   "name": "@momsfriendlydevco/sift-sieve",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Wrapper around Sift which provides other ReST functionality",
   "main": "index.js",
   "scripts": {
