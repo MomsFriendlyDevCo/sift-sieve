@@ -41,4 +41,7 @@ Options are passed directly to Sift with the following exceptions:
 |--------------|-----------|---------|----------------------------------------------------------------------------------------|
 | `remapArray` | `boolean` | `true`  | Whether to transform simple `{key: Array}` keys into `{key: {$in: Array}}`             |
 | `count`      | `boolean` | `false` | Whether to return a single Number of the matching elements rather than the found items |
-| `applyWhere` | `boolean` | `false` | Whether to allow `$where` conditions (at any depth) - if falsy any query containing `$where` throws an error |
+| `applyWhere` | `boolean` | `false` | Whether to allow `$where` conditions and function values (at any depth) - unless exactly `true` any query containing either throws an error |
+| `applyUnsafeRegex` | `boolean` | `false` | Whether to allow regular expressions prone to catastrophic backtracking (ReDoS), detected via [safe-regex2](https://github.com/fastify/safe-regex2) - unless exactly `true` any query containing one throws an error |
+
+Queries must be plain objects (or empty), any other type throws an error.

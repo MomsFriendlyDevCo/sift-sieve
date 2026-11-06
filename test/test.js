@@ -87,6 +87,11 @@ describe('sift-sieve', ()=> {
 		expect(()=> sieve(data, '$where')).to.throw();
 		expect(()=> sieve(data, 'this.age > 25')).to.throw();
 		expect(()=> sieve(data, 123)).to.throw();
+		expect(()=> sieve(data, [{$where: 'this.age > 25'}])).to.throw();
+		expect(()=> sieve(data, ()=> true)).to.throw();
+		expect(()=> sieve(data, /Joe/)).to.throw();
+		expect(sieve(data)).to.deep.equal(data);
+		expect(sieve(data, null)).to.deep.equal(data);
 	});
 
 
@@ -151,7 +156,6 @@ describe('sift-sieve', ()=> {
 				{age: {$not: {$where: payload}}},
 				{tags: {$elemMatch: {$where: payload}}},
 				{name: {$where: payload}},
-				[{$where: payload}],
 			].forEach(query => {
 				expect(()=> sieve(data, query), JSON.stringify(query)).to.throw(/\$where/);
 				expect(tripped(()=> sieve(data, query)), JSON.stringify(query)).to.be.false;
@@ -207,6 +211,13 @@ describe('sift-sieve', ()=> {
 			expect(tripped(()=> sieve(data, {age: evil}))).to.be.false;
 			expect(tripped(()=> sieve(data, {age: {$eq: evil}}))).to.be.false;
 			expect(tripped(()=> sieve(data, {$or: [{age: evil}]}, {remapArray: false}))).to.be.false;
+			expect(()=> sieve(data, {age: evil})).to.throw(/applyWhere/);
+			expect(()=> sieve(data, {age: {$in: [22, evil]}})).to.throw(/applyWhere/);
+		});
+
+
+		it('should allow function values when applyWhere is enabled', ()=> {
+			expect(sieve(data, {age: v => v > 25}, {applyWhere: true})).to.deep.equal(data.filter(d => d.age > 25));
 		});
 
 
@@ -261,6 +272,31 @@ describe('sift-sieve', ()=> {
 			var start = Date.now();
 			_.attempt(()=> sieve([{name: 'a'.repeat(25) + '!'}], {name: {$regex: '^(a+)+$'}}));
 			expect(Date.now() - start).to.be.below(250);
+		});
+
+
+		it('should reject unsafe regular expressions unless applyUnsafeRegex is enabled', ()=> {
+			[
+				{name: {$regex: '^(a+)+$'}},
+				{name: {$regex: /(x+x+)+y/}},
+				{name: /^(a+)+$/},
+				{name: {$in: [/^(a+)+$/]}},
+				{name: {$not: /(a*)*b/}},
+				{name: {$elemMatch: {$regex: '(.*a){12}'}}},
+			].forEach(query => {
+				expect(()=> sieve(data, query), JSON.stringify(query)).to.throw(/applyUnsafeRegex/);
+				[1, 'true', {}].forEach(applyUnsafeRegex =>
+					expect(()=> sieve(data, query, {applyUnsafeRegex})).to.throw(/applyUnsafeRegex/)
+				);
+				expect(()=> sieve(data, query, {applyUnsafeRegex: true})).to.not.throw();
+			});
+		});
+
+
+		it('should allow safe regular expressions', ()=> {
+			expect(sieve(data, {name: {$regex: '^j', $options: 'i'}})).to.deep.equal(data.filter(d => /^j/i.test(d.name)));
+			expect(sieve(data, {name: /random$/i})).to.deep.equal(data.filter(d => /random$/i.test(d.name)));
+			expect(sieve(data, {email: {$in: [/gmail/, /^joe/]}})).to.deep.equal(data.filter(d => /gmail|^joe/.test(d.email)));
 		});
 
 

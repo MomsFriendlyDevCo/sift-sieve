@@ -1,25 +1,44 @@
 var _ = require('lodash');
+var safeRegex = require('safe-regex2');
 var sift = require('sift');
 
 /**
-* Recursively determine if a query contains a `$where` operator at any depth
+* Recursively validate a query at any depth, throwing if it contains anything not permitted by the settings
+* Rejects `$where` operators and function values unless `applyWhere` is true, and unsafe (ReDoS prone) regular expressions unless `applyUnsafeRegex` is true
 * @param {*} query The query (or sub-query) to examine
-* @returns {boolean} True if a `$where` key was found anywhere within the query
+* @param {Object} settings The sieve settings
+* @param {boolean} settings.applyWhere Whether to permit `$where` operators and function values
+* @param {boolean} settings.applyUnsafeRegex Whether to permit regular expressions with exponential backtracking
+* @returns {void}
+* @throws {Error} If the query contains a disallowed condition
 */
-var hasWhere = query =>
-	Array.isArray(query) ? query.some(hasWhere)
-	: _.isPlainObject(query) ? Object.keys(query).some(k => k == '$where' || hasWhere(query[k]))
-	: false;
+var validateQuery = (query, settings) => {
+	if (_.isFunction(query)) {
+		if (settings.applyWhere !== true) throw new Error('Function values are not permitted unless the `applyWhere` option is enabled');
+	} else if (_.isRegExp(query)) {
+		if (settings.applyUnsafeRegex !== true && !safeRegex(query)) throw new Error(`Unsafe regular expression "${query.source}" is not permitted unless the \`applyUnsafeRegex\` option is enabled`);
+	} else if (Array.isArray(query)) {
+		query.forEach(q => validateQuery(q, settings));
+	} else if (_.isPlainObject(query)) {
+		Object.keys(query).forEach(k => {
+			if (k == '$where' && settings.applyWhere !== true) throw new Error('$where conditions are not permitted unless the `applyWhere` option is enabled');
+			if (k == '$regex' && _.isString(query[k]) && settings.applyUnsafeRegex !== true && !safeRegex(query[k])) throw new Error(`Unsafe regular expression "${query[k]}" is not permitted unless the \`applyUnsafeRegex\` option is enabled`);
+			validateQuery(query[k], settings);
+		});
+	}
+};
 
 module.exports = (data, query, options) => {
 	var settings = {
 		remapArray: true,
 		count: false,
 		applyWhere: false,
+		applyUnsafeRegex: false,
 		...options,
 	};
 
 	if (!_.isArray(data)) throw new Error('Input to sieve must be an array');
+	if (query && !_.isPlainObject(query)) throw new Error('Query to sieve must be an object');
 
 	// Empty queries {{{
 	if (!query || _.isEmpty(query)) {
@@ -41,9 +60,9 @@ module.exports = (data, query, options) => {
 		});
 	// }}}
 
-	if (settings.applyWhere !== true && hasWhere(siftFilter)) throw new Error('$where conditions are not permitted unless the `applyWhere` option is enabled');
+	validateQuery(siftFilter, settings);
 
-	var siftQuery = sift(siftFilter, _.omit(options, ['remapArray', 'count', 'applyWhere']));
+	var siftQuery = sift(siftFilter, _.omit(options, ['remapArray', 'count', 'applyWhere', 'applyUnsafeRegex']));
 
 	var count = 0; // Number of items that test positive in the output so far
 	var skipped = 0;
