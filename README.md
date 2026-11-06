@@ -41,3 +41,10 @@ Options are passed directly to Sift with the following exceptions:
 |--------------|-----------|---------|----------------------------------------------------------------------------------------|
 | `remapArray` | `boolean` | `true`  | Whether to transform simple `{key: Array}` keys into `{key: {$in: Array}}`             |
 | `count`      | `boolean` | `false` | Whether to return a single Number of the matching elements rather than the found items |
+
+
+Security
+--------
+Sift compiles string `$where` values via `new Function()`, which allows arbitrary code execution when queries come from untrusted sources (e.g. ReST requests).
+Sieve therefore refuses string `$where` queries (at any depth) and throws `String $where queries are not permitted`. Function `$where` values (which can only be supplied from code) are still accepted.
+This can be overridden by passing your own `$where` implementation via `options.operations`.

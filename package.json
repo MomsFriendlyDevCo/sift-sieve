@@ -21,11 +21,11 @@
   },
   "homepage": "https://github.com/MomsFriendlyDevCo/sift-sieve#readme",
   "devDependencies": {
-    "chai": "^4.2.0",
-    "mocha": "^8.2.1"
+    "chai": "^6.3.0",
+    "mocha": "^12.0.3"
   },
   "dependencies": {
-    "lodash": "^4.17.20",
-    "sift": "^13.4.0"
+    "lodash": "^4.18.1",
+    "sift": "^17.1.4"
   }
 }

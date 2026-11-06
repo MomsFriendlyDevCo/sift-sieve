@@ -25,12 +25,22 @@ module.exports = (data, query, options) => {
 	// Remap {id: ARRAY} into {id: {$in: ARRAY}} {{{
 	if (settings.remapArray)
 		Object.keys(siftFilter).forEach(k => {
-			if (Array.isArray(siftFilter[k]))
+			if (!k.startsWith('$') && Array.isArray(siftFilter[k]))
 				siftFilter[k] = {$in: siftFilter[k]};
 		});
 	// }}}
 
-	var siftQuery = sift(siftFilter, options);
+	var siftQuery = sift(siftFilter, {
+		...options,
+		operations: {
+			// Sift compiles string $where values via `new Function()` - refuse them as queries are usually user-supplied
+			$where: (params, ownerQuery, siftOptions) => {
+				if (typeof params != 'function') throw new Error('String $where queries are not permitted');
+				return sift.$where(params, ownerQuery, siftOptions);
+			},
+			...options?.operations,
+		},
+	});
 
 	var count = 0; // Number of items that test positive in the output so far
 	var skipped = 0;

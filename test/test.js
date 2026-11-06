@@ -19,6 +19,13 @@ describe('sift-sieve', ()=> {
 		expect(sieve(data, {name: {$regex: '^j', $options: 'i'}})).to.deep.equal(data.filter(d => /^j/i.test(d.name)));
 	});
 
+	it('should refuse string $where queries', ()=> {
+		expect(()=> sieve(data, {$where: 'this.age > 25'})).to.throw(/not permitted/);
+		expect(()=> sieve(data, {$or: [{$where: 'true'}]})).to.throw(/not permitted/);
+		expect(sieve(data, {$or: [{age: 22}, {age: 25}]})).to.deep.equal(data.slice(0, 2));
+		expect(sieve(data, {$where: function() { return this.age > 25 }})).to.deep.equal(data.filter(d => d.age > 25));
+	});
+
 	it('should support "count"', ()=> {
 		expect(sieve(data, {}, {count: true})).to.deep.equal(data.length);
 		expect(sieve(data, {age: {$gt: 25}}, {count: true})).to.deep.equal(data.filter(d => d.age > 25).length);
